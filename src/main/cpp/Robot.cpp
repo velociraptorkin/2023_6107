@@ -9,10 +9,13 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 
 void Robot::RobotInit() {
+  // Setup auto chooser. Modified stock code.
   m_chooser.SetDefaultOption(kAutoNameDefault, kAutoNameDefault);
   m_chooser.AddOption(kAutoNameMobility, kAutoNameMobility);
   m_chooser.AddOption(kAutoNameBalance, kAutoNameBalance);
   frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
+
+  // Motor setup
   m_right2.Follow(m_right1);
   m_left2.Follow(m_left1);
 
@@ -21,6 +24,7 @@ void Robot::RobotInit() {
   m_right1.SetInverted(false);
   m_right2.SetInverted(false);
 
+  // Initially set all pneumatics to false.
   solonoid_arms.Set(false);
   solonoid_gripper.Set(false);
   solonoid_brakes.Set(false);
@@ -32,7 +36,10 @@ void Robot::RobotInit() {
   e_right1.SetPosition(0);
   e_right2.SetPosition(0);
 
+  // This configures the REVPH for using the Digital sensor.
+  // Not needed every run, but if we have to switch to a new/backup it is needed.
   compressor_main.EnableDigital();
+
 #ifdef TEST_PID
   // Setup PID arguments for extender
   c_extender.SetFeedbackDevice(e_extender);
@@ -55,6 +62,8 @@ void Robot::RobotInit() {
  * LiveWindow and SmartDashboard integrated updating.
  */
 void Robot::RobotPeriodic() {
+
+  // Mostly using this to update logging and UI.
 	frc::SmartDashboard::PutBoolean("Extender Upper Limit", di_extender_upper.Get());
 	frc::SmartDashboard::PutBoolean("Extender Lower Limit", di_extender_lower.Get());
 	frc::SmartDashboard::PutBoolean("Extender at drop distance", di_extender_drop.Get());
@@ -63,17 +72,6 @@ void Robot::RobotPeriodic() {
 	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetPitch());
 }
 
-/**
- * This autonomous (along with the chooser code above) shows how to select
- * between different autonomous modes using the dashboard. The sendable chooser
- * code works with the Java SmartDashboard. If you prefer the LabVIEW Dashboard,
- * remove all of the chooser code and uncomment the GetString line to get the
- * auto name from the text box below the Gyro.
- *
- * You can add additional auto modes by adding additional comparisons to the
- * if-else structure below with additional strings. If using the SendableChooser
- * make sure to add them to the chooser code above as well.
- */
 void Robot::AutonomousInit() {
   m_autoSelected = m_chooser.GetSelected();
   
@@ -81,6 +79,8 @@ void Robot::AutonomousInit() {
   d_pitch = s_IMU.GetPitch();
   d_initial_pitch = s_IMU.GetPitch();
   #endif
+  
+  // Start timer for auto
   game_timer.Reset();
   game_timer.Start();
   fmt::print("Auto selected: {}\n", m_autoSelected);
@@ -92,13 +92,15 @@ void Robot::AutonomousPeriodic() {
   // Mobility Only Auto
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameMobility) {
+    // Back up for 5 seconds at 1/4 speed. Should get us just outside of the community.
+    // TODO: Add code to drop the cube on the highest node.
     if (game_timer.Get() > 1_s && game_timer.Get() < 6_s){
       if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
         m_left1.Set(-0.25);
         m_right1.Set(0.25);
       }
     } 
-
+    // Set speed to zero and hold position.
     if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
       m_left1.Set(0.0);
       m_right1.Set(0.0);
@@ -109,15 +111,17 @@ void Robot::AutonomousPeriodic() {
   // Balancing Auto
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameBalance) {
-    // Go out and over(?) the charge station.
-    if (game_timer.Get() > 1_s && game_timer.Get() < 6_s){
+    // Go over(?) the charge station. -1/4 speed for 5 seconds.
+    // Start imediatly so we have the most time to balance. 
+    // Maybe should up the speed and lower the time for maximum balance time?
+    if ( game_timer.Get() < 5_s){
       if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
         m_left1.Set(-0.25);
         m_right1.Set(0.25);
       }
     } 
-    // Start back up the charge station
-    if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
+    // Start back up the charge station at 1/4 speed for 0.5 seconds
+    if (game_timer.Get() > 5_s && game_timer.Get() < 5.5_s){
       m_left1.Set(0.25);
       m_right1.Set(-0.25);
     }
@@ -135,7 +139,8 @@ void Robot::AutonomousPeriodic() {
           t_pause_time = game_timer.Get() + 1_s;
         }
         // Do we need to take into account angle delta in our calculations?
-        // 
+        // Maybe use the derivitive of this to slow our speed?
+            // If there is a high angular velocity, maybe we should slow down and let it settle?
         if (game_timer.Get() >= t_pause_time) {
           if (d_pitch > DEADBAND_BALANCE){
             // Move Forward
@@ -177,6 +182,11 @@ void Robot::TeleopInit() {
 }
 
 void Robot::TeleopPeriodic() {
+  // At some point we should try moving to PID controllers for movement.
+  // This would let us set a target velocity based off of the controller
+  // position instead of setting a percent output. Would also allow switching
+  // to distance tracking so that we can move exact distances to tie into
+  // camera inputs or other sensors. 
   // Get analog controls 
   double d_driver_speed = -controller_driver->GetRightX();
   double d_driver_turn = -controller_driver->GetLeftY();

@@ -82,8 +82,8 @@ class Robot : public frc::TimedRobot {
   std::string m_autoSelected;
   rev::CANSparkMax::IdleMode im_mode = rev::CANSparkMax::IdleMode::kCoast;
   frc::Timer game_timer;
-  #ifdef TEST_BALANCE
   ctre::phoenix::sensors::WPI_PigeonIMU s_IMU{13}; 
+  #ifdef TEST_BALANCE
   double d_pitch, d_hpitch, d_initial_pitch;
   units::time::second_t t_pause_time;
   #endif
