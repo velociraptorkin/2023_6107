@@ -251,6 +251,13 @@ void Robot::TeleopPeriodic() {
 
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
+    #ifdef TEST_RETRACT_SAFE
+    // Retract arms. Remember, threading on the rod is such that
+    // more negative is farther out. 0 is initial position.
+    if (e_extender.GetPosition() < d_extender_position[1]) {
+      c_extender.SetReference(d_extender_position[0], rev::CANSparkMax::ControlType::kPosition);
+    }
+    #endif
     solonoid_arms.Toggle();
   }
   if (controller_arms->GetRightBumperPressed()) {
@@ -258,6 +265,18 @@ void Robot::TeleopPeriodic() {
   }
   if (controller_driver->GetLeftBumperPressed()) {
     solonoid_brakes.Toggle();
+    #ifdef TEST_BRAKING
+    if (im_mode == rev::CANSparkMax::IdleMode::kCoast) {
+      im_mode = rev::CANSparkMax::IdleMode::kBrake;
+    }
+    if (im_mode == rev::CANSparkMax::IdleMode::kBrake) {
+      im_mode = rev::CANSparkMax::IdleMode::kCoast;
+    }
+    m_left1.SetIdleMode(im_mode);
+    m_left2.SetIdleMode(im_mode);
+    m_right1.SetIdleMode(im_mode);
+    m_right2.SetIdleMode(im_mode);
+    #endif
   }
   #ifdef TEST_POOFER
   if (controller_arms->GetLeftStickButtonPressed()) {
@@ -310,18 +329,7 @@ void Robot::TeleopPeriodic() {
   #endif
 
   // Toggle for brake/coast mode for motors
-  if (controller_driver->GetStartButtonPressed()) {
-    if (im_mode == rev::CANSparkMax::IdleMode::kCoast) {
-      im_mode = rev::CANSparkMax::IdleMode::kBrake;
-    }
-    if (im_mode == rev::CANSparkMax::IdleMode::kBrake) {
-      im_mode = rev::CANSparkMax::IdleMode::kCoast;
-    }
-    m_left1.SetIdleMode(im_mode);
-    m_left2.SetIdleMode(im_mode);
-    m_right1.SetIdleMode(im_mode);
-    m_right2.SetIdleMode(im_mode);
-  }
+
 }
 
 void Robot::DisabledInit() {}
