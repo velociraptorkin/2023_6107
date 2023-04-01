@@ -13,7 +13,7 @@
 #define TEST_MINOR_TURN 1
 //#define TEST_POOFER 1
 //#define TEST_RETRACT_SAFE 1
-//#define TEST_BRAKING 1
+#define TEST_BRAKING 1
 
 
 #include <frc/TimedRobot.h>
@@ -23,8 +23,12 @@
 #include <frc/Solenoid.h>
 #include <frc/Compressor.h>
 #include <frc/DigitalInput.h>
+#include <frc/ADIS16448_IMU.h>
+#include <frc/drive/DifferentialDrive.h>
+#include <frc/motorcontrol/MotorControllerGroup.h>
 #include <rev/CANSparkMax.h>
 #include <ctre/Phoenix.h>
+
 
 // Pneumatic bindings
 #define CHANNEL_BRAKE 6
@@ -54,13 +58,13 @@
 #define EXTENDER_CONVERSION 0.25
 
 // Various other settings
-#define NERF_SPEED 0.25
-#define NERF_TURN 1.0
+#define NERF_SPEED 1.0
+#define NERF_TURN 0.5
 #define NERF_EXTEND 0.3
 #define NERF_AUTO 0.5
 #define AUTO_SPEED 0.125
-#define DEADBAND_CONTROL 0.125
-#define DEADBAND_BALANCE 5.0
+#define DEADBAND_CONTROL 0.10
+#define DEADBAND_BALANCE 5_deg
 #define CONTROL_MODE ControlMode::PercentOutput
 
 class Robot : public frc::TimedRobot {
@@ -86,16 +90,16 @@ class Robot : public frc::TimedRobot {
   std::string m_autoSelected;
   rev::CANSparkMax::IdleMode im_mode = rev::CANSparkMax::IdleMode::kCoast;
   frc::Timer game_timer;
-  ctre::phoenix::sensors::WPI_PigeonIMU s_IMU{13}; 
+  frc::ADIS16448_IMU s_IMU{};
   #ifdef TEST_BALANCE
-  double d_pitch, d_hpitch, d_initial_pitch;
+  units::angle::degree_t d_pitch, d_hpitch, d_initial_pitch;
   units::time::second_t t_pause_time;
   #endif
-  double d_extender_position[4] = {EXTENDER_HOME, EXTENDER_PICK, EXTENDER_MID, EXTENDER_HIGH};
   double d_drive_speed = AUTO_SPEED;
   #ifdef TEST_PID
   bool b_vel_mode = false;
   #endif
+  
 
   // Controllers
   frc::XboxController * controller_driver = new frc::XboxController(0);
@@ -134,4 +138,7 @@ class Robot : public frc::TimedRobot {
   // PID Controllers
   rev::SparkMaxPIDController c_extender = m_extender.GetPIDController();
 #endif
+  frc::MotorControllerGroup mg_left{m_left1, m_left2};
+  frc::MotorControllerGroup mg_right{m_right1, m_right2};
+  frc::DifferentialDrive d_drive{mg_left, mg_right};
 };

@@ -19,10 +19,10 @@ void Robot::RobotInit() {
   m_right2.Follow(m_right1);
   m_left2.Follow(m_left1);
 
-  m_left1.SetInverted(false);
-  m_left2.SetInverted(false);
+  m_left1.SetInverted(true);
+  //m_left2.SetInverted(false);
   m_right1.SetInverted(false);
-  m_right2.SetInverted(false);
+  //m_right2.SetInverted(false);
 
   // Initially set all pneumatics to false.
   solonoid_arms.Set(false);
@@ -39,7 +39,7 @@ void Robot::RobotInit() {
   // This configures the REVPH for using the Digital sensor.
   // Not needed every run, but if we have to switch to a new/backup it is needed.
   compressor_main.EnableDigital();
-
+  s_IMU.Calibrate();
 #ifdef TEST_PID
   // Setup PID arguments for extender
   c_extender.SetFeedbackDevice(e_extender);
@@ -69,15 +69,18 @@ void Robot::RobotPeriodic() {
 	frc::SmartDashboard::PutBoolean("Extender at drop distance", di_extender_drop.Get());
 	frc::SmartDashboard::PutNumber("Extender Rotation Count", e_extender.GetPosition());
   frc::SmartDashboard::PutBoolean("Extender PID Controller", b_vel_mode);
-	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetAngle());
+	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetGyroAngleX().value());
+	frc::SmartDashboard::PutNumber("Left Y", controller_driver->GetLeftY());
+	frc::SmartDashboard::PutNumber("Right X", controller_driver->GetRightX());
+  
 }
 
 void Robot::AutonomousInit() {
   m_autoSelected = m_chooser.GetSelected();
   
   #ifdef TEST_BALANCE
-  d_pitch = s_IMU.GetPitch();
-  d_initial_pitch = s_IMU.GetPitch();
+  d_pitch = s_IMU.GetAngle();
+  d_initial_pitch = s_IMU.GetAngle();
   #endif
   
   // Start timer for auto
@@ -112,25 +115,31 @@ void Robot::AutonomousPeriodic() {
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameBalance) {
     // Go over(?) the charge station. -1/4 speed for 5 seconds.
-    // Start imediatly so we have the most time to balance. 
-    // Maybe should up the speed and lower the time for maximum balance time?
-    if ( game_timer.Get() < 5_s){
-      if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
-        m_left1.Set(-0.30);
-        m_right1.Set(0.30);
-      }
+    if ( game_timer.Get() < 2.2_s){
+      m_left1.Set(-0.30);
+      m_right1.Set(0.30);
+    }
+    // Go slow over and down the charge station.
+    if (game_timer.Get() > 2.2_s && game_timer.Get() < 7_s){
+      m_left1.Set(-.10);
+      m_right1.Set(0.10);
     } 
-    // Start back up the charge station at 1/4 speed for 0.5 seconds
-    if (game_timer.Get() > 5_s && game_timer.Get() < 5.5_s){
+    // Start back up the charge station at 1/4 speed for 1.5 seconds
+    if (game_timer.Get() > 7_s && game_timer.Get() < 8.5_s){
       m_left1.Set(0.25);
       m_right1.Set(-0.25);
+    }
+    // Stop moving
+    if (game_timer.Get() > 8.5_s && game_timer.Get() < 9_s){
+      m_left1.Set(0.0);
+      m_right1.Set(0.0);
     }
     #ifdef TEST_BALANCE
     // Start autobalance process
     // Assumes we are not on a level surface.
-    if (game_timer.Get() > 6.5_s && game_timer.Get() < 15_s) {
+    if (game_timer.Get() > 9_s && game_timer.Get() < 15_s) {
       d_hpitch = d_pitch;
-      d_pitch = s_IMU.GetPitch();
+      d_pitch = s_IMU.GetGyroAngleX();
         
       if ((d_pitch > DEADBAND_BALANCE or d_pitch < -DEADBAND_BALANCE) and game_timer.Get() >= t_pause_time) {
         // if pitch direction changes, shorten drive time. => go slower instead of pause
@@ -188,8 +197,8 @@ void Robot::TeleopPeriodic() {
   // to distance tracking so that we can move exact distances to tie into
   // camera inputs or other sensors. 
   // Get analog controls 
-  double d_driver_speed = -controller_driver->GetRightX();
-  double d_driver_turn = -controller_driver->GetLeftY();
+  double d_driver_speed = controller_driver->GetLeftY();
+  double d_driver_turn = controller_driver->GetRightX();
   double d_arms_extend = -controller_arms->GetLeftX();
   
   #ifdef TEST_MINOR_TURN
@@ -198,64 +207,33 @@ void Robot::TeleopPeriodic() {
   #endif
 
   // Apply deadband to analog controls
-  if (abs(d_driver_speed) <= DEADBAND_CONTROL) {
-    d_driver_speed = 0.0;
-  }
-  if (abs(d_driver_turn) <= DEADBAND_CONTROL) {
-    d_driver_turn = 0.0;
-  }
   if (abs(d_arms_extend) <= DEADBAND_CONTROL) {
     d_arms_extend = 0.0;
   }
-  
-  #ifdef TEST_MINOR_TURN
-  if (abs(d_turn_minorl) <= DEADBAND_CONTROL) {
-    d_turn_minorl = 0.0;
-  }
-  if (abs(d_turn_minorr) <= DEADBAND_CONTROL) {
-    d_turn_minorr = 0.0;
-  }
-  #endif
-
-  // Scale from 0 - 100
-  d_driver_speed = (d_driver_speed) / (1.0 - DEADBAND_CONTROL);
-  d_driver_turn = (d_driver_turn) / (1.0 - DEADBAND_CONTROL);
-  d_arms_extend = (d_arms_extend) / (1.0 - DEADBAND_CONTROL);
-  #ifdef TEST_MINOR_TURN
-  d_turn_minorl = (d_turn_minorl) / (1.0 - DEADBAND_CONTROL);
-  d_turn_minorr = (d_turn_minorr) / (1.0 - DEADBAND_CONTROL);
-  #endif
 
   // Apply movement macros
-  d_driver_speed *= NERF_SPEED;
-  d_driver_turn *= NERF_TURN;
+  d_driver_speed = d_driver_speed * NERF_SPEED;
+  d_driver_turn = d_driver_turn * NERF_TURN;
   d_arms_extend *= NERF_EXTEND;
   #ifdef TEST_MINOR_TURN
-  d_turn_minorl *= 0.125;
-  d_turn_minorr *= 0.125;
+  d_turn_minorl *= 0.5;
+  d_turn_minorr *= 0.5;
   #endif
   
-  // Calculate left and right drive controls
-  #ifdef TEST_MINOR_TURN
-  double d_left = -d_driver_speed + d_driver_turn - d_turn_minorl + d_turn_minorr;
-  double d_right = -d_driver_speed - d_driver_turn - d_turn_minorl + d_turn_minorr;
-  #else
-  double d_left = -d_driver_speed + d_driver_turn;
-  double d_right = -d_driver_speed - d_driver_turn;
-  #endif
+
   // Set motor and pneumatic outputs from control inputs
   
   // Command motors
-  m_left1.Set(d_left);
-  m_right1.Set(d_right);
+  d_drive.ArcadeDrive(d_driver_speed, d_driver_turn - d_turn_minorl + d_turn_minorr);
+
 
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
     #ifdef TEST_RETRACT_SAFE
     // Retract arms. Remember, threading on the rod is such that
     // more negative is farther out. 0 is initial position.
-    if (e_extender.GetPosition() < d_extender_position[1]) {
-      c_extender.SetReference(d_extender_position[0], rev::CANSparkMax::ControlType::kPosition);
+    if (e_extender.GetPosition() < EXTENDER_PICK) {
+      c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
     }
     #endif
     solonoid_arms.Toggle();
@@ -310,22 +288,22 @@ void Robot::TeleopPeriodic() {
   } else {
     // Home Position
     if (controller_arms->GetAButtonPressed()){
-      c_extender.SetReference(d_extender_position[0], rev::CANSparkMax::ControlType::kPosition);
+      c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
     }
 
     // Pickup position
     if (controller_arms->GetBButtonPressed()) {
-      c_extender.SetReference(d_extender_position[1], rev::CANSparkMax::ControlType::kPosition);
+      c_extender.SetReference(EXTENDER_PICK, rev::CANSparkMax::ControlType::kPosition);
     }
 
     // Mid position
     if (controller_arms->GetXButtonPressed()) {
-      c_extender.SetReference(d_extender_position[2], rev::CANSparkMax::ControlType::kPosition);
+      c_extender.SetReference(EXTENDER_MID, rev::CANSparkMax::ControlType::kPosition);
     }
 
     // High Position
     if (controller_arms->GetYButtonPressed()) {
-      c_extender.SetReference(d_extender_position[3], rev::CANSparkMax::ControlType::kPosition);
+      c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
     }
   }
   #else
