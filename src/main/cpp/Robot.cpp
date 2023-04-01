@@ -69,7 +69,7 @@ void Robot::RobotPeriodic() {
 	frc::SmartDashboard::PutBoolean("Extender at drop distance", di_extender_drop.Get());
 	frc::SmartDashboard::PutNumber("Extender Rotation Count", e_extender.GetPosition());
   frc::SmartDashboard::PutBoolean("Extender PID Controller", b_vel_mode);
-	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetPitch());
+	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetAngle());
 }
 
 void Robot::AutonomousInit() {
@@ -190,7 +190,7 @@ void Robot::TeleopPeriodic() {
   // Get analog controls 
   double d_driver_speed = -controller_driver->GetRightX();
   double d_driver_turn = -controller_driver->GetLeftY();
-  double d_arms_extend = controller_arms->GetRightY();
+  double d_arms_extend = -controller_arms->GetLeftX();
   
   #ifdef TEST_MINOR_TURN
   double d_turn_minorl = controller_driver->GetLeftTriggerAxis();
@@ -288,6 +288,9 @@ void Robot::TeleopPeriodic() {
   if (controller_arms->GetStartButtonPressed()) {
     b_vel_mode = !b_vel_mode;
   }
+  if (controller_arms->GetRightStickButtonPressed()){
+    e_extender.SetPosition(0);
+  }
   #endif
 
   // Apply limit switches to extender motor
@@ -301,7 +304,7 @@ void Robot::TeleopPeriodic() {
 #ifdef TEST_PID
   // Command motor
   // Need to figure out a way to do both of these at the same time without toggling states.
-  if (b_vel_mode) {
+  if (!b_vel_mode) {
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
     //m_extender.Set( d_controller_1_x);
   } else {

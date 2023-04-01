@@ -38,17 +38,19 @@
 #define CHANNEL_EXTENDER_DROP 2
 
 // PID Position Settings
-#define EXTENDER_P 0.3
+#define EXTENDER_P 1.0
 #define EXTENDER_I 1e-4
 #define EXTENDER_D 1.0
+//#define EXTENDER_I 1e-4
+//#define EXTENDER_D 1.0
 #define EXTENDER_IZ 0.0
 #define EXTENDER_FF 0.0
-#define EXTENDER_MAX_OUT 1.0
-#define EXTENDER_MIN_OUT -1.0
-#define EXTENDER_HOME -1.0
-#define EXTENDER_PICK -1.5
-#define EXTENDER_MID -3.0
-#define EXTENDER_HIGH -6.0
+#define EXTENDER_MAX_OUT 0.3
+#define EXTENDER_MIN_OUT -0.3
+#define EXTENDER_HOME 0.0
+#define EXTENDER_PICK -3.41
+#define EXTENDER_MID -3.1
+#define EXTENDER_HIGH -10.5
 #define EXTENDER_CONVERSION 0.25
 
 // Various other settings
