@@ -116,8 +116,8 @@ void Robot::AutonomousPeriodic() {
     // Maybe should up the speed and lower the time for maximum balance time?
     if ( game_timer.Get() < 5_s){
       if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
-        m_left1.Set(-0.25);
-        m_right1.Set(0.25);
+        m_left1.Set(-0.30);
+        m_right1.Set(0.30);
       }
     } 
     // Start back up the charge station at 1/4 speed for 0.5 seconds
@@ -231,14 +231,14 @@ void Robot::TeleopPeriodic() {
   d_driver_turn *= NERF_TURN;
   d_arms_extend *= NERF_EXTEND;
   #ifdef TEST_MINOR_TURN
-  d_turn_minorl *= NERF_TURN * NERF_TURN;
-  d_turn_minorr *= NERF_TURN * NERF_TURN;
+  d_turn_minorl *= 0.125;
+  d_turn_minorr *= 0.125;
   #endif
   
   // Calculate left and right drive controls
   #ifdef TEST_MINOR_TURN
-  double d_left = -d_driver_speed + d_driver_turn  - d_turn_minorl;
-  double d_right = -d_driver_speed - d_driver_turn - d_turn_minorr;
+  double d_left = -d_driver_speed + d_driver_turn - d_turn_minorl + d_turn_minorr;
+  double d_right = -d_driver_speed - d_driver_turn - d_turn_minorl + d_turn_minorr;
   #else
   double d_left = -d_driver_speed + d_driver_turn;
   double d_right = -d_driver_speed - d_driver_turn;

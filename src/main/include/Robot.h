@@ -10,7 +10,7 @@
 
 #define TEST_PID 1
 //#define TEST_BALANCE 1
-//#define TEST_MINOR_TURN 1
+#define TEST_MINOR_TURN 1
 //#define TEST_POOFER 1
 //#define TEST_RETRACT_SAFE 1
 //#define TEST_BRAKING 1
