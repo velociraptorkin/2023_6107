@@ -285,22 +285,29 @@ void Robot::TeleopPeriodic() {
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
     //m_extender.Set( d_controller_1_x);
   } else {
-  if (controller_arms->GetXButtonPressed()){
-    c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
-  } 
-  if (controller_arms->GetYButtonPressed()) {
-    c_extender.SetReference(EXTENDER_MID, rev::CANSparkMax::ControlType::kPosition);
+    // Home Position
+    if (controller_arms->GetAButtonPressed()){
+      c_extender.SetReference(d_extender_position[0], rev::CANSparkMax::ControlType::kPosition);
+    }
+
+    // Pickup position
+    if (controller_arms->GetBButtonPressed()) {
+      c_extender.SetReference(d_extender_position[1], rev::CANSparkMax::ControlType::kPosition);
+    }
+
+    // Mid position
+    if (controller_arms->GetXButtonPressed()) {
+      c_extender.SetReference(d_extender_position[2], rev::CANSparkMax::ControlType::kPosition);
+    }
+
+    // High Position
+    if (controller_arms->GetYButtonPressed()) {
+      c_extender.SetReference(d_extender_position[3], rev::CANSparkMax::ControlType::kPosition);
+    }
   }
-  if (controller_arms->GetBButtonPressed()) {
-    c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
-  }
-  if (controller_arms->GetAButtonPressed()) {
-    c_extender.SetReference(EXTENDER_PICK, rev::CANSparkMax::ControlType::kPosition);
-  }
-}
-#else
-  m_extender.Set(d_arms_extend);
-#endif
+  #else
+    m_extender.Set(d_arms_extend);
+  #endif
 
   // Toggle for brake/coast mode for motors
   if (controller_driver->GetStartButtonPressed()) {

@@ -44,10 +44,10 @@
 #define EXTENDER_MAX_OUT 1.0
 #define EXTENDER_MIN_OUT -1.0
 #define EXTENDER_HOME -1.0
-#define EXTENDER_MID -2.0
-#define EXTENDER_HIGH -4.0
-#define EXTENDER_PICK -6.0
-#define EXTENDER_CONVERSION 0.125
+#define EXTENDER_PICK -1.5
+#define EXTENDER_MID -3.0
+#define EXTENDER_HIGH -6.0
+#define EXTENDER_CONVERSION 0.25
 
 // Various other settings
 #define NERF_SPEED 0.25
@@ -87,7 +87,7 @@ class Robot : public frc::TimedRobot {
   double d_pitch, d_hpitch, d_initial_pitch;
   units::time::second_t t_pause_time;
   #endif
-
+  double d_extender_position[4] = {EXTENDER_HOME, EXTENDER_PICK, EXTENDER_MID, EXTENDER_HIGH};
   double d_drive_speed = AUTO_SPEED;
   #ifdef TEST_PID
   bool b_vel_mode = false;
