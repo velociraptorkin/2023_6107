@@ -8,7 +8,9 @@
 
 // Build Options
 //#define TEST_BALANCE 1
-//#define TEST_POOFER 1
+// Unable to get IMU to work, imu-assisted balancing is shelved for now
+
+//#define TEST_AUTO_ZERO 1
 //#define TEST_RETRACT_SAFE 1
 //#define TEST_SOFT_LIMIT 1
 //#define TEST_PID_DRIVING 1
@@ -112,9 +114,7 @@ class Robot : public frc::TimedRobot {
   frc::Solenoid solonoid_arms{12, frc::PneumaticsModuleType::REVPH, CHANNEL_ARMS};
   frc::Solenoid solonoid_gripper{12, frc::PneumaticsModuleType::REVPH, CHANNEL_GRIPPER};
   frc::Solenoid solonoid_brakes{12, frc::PneumaticsModuleType::REVPH, CHANNEL_BRAKE};
-  #ifdef TEST_POOFER
   frc::Solenoid solonoid_poofer{12, frc::PneumaticsModuleType::REVPH, CHANNEL_POOFER};
-  #endif
   frc::Compressor compressor_main{12, frc::PneumaticsModuleType::REVPH};
 
   // Limit switches

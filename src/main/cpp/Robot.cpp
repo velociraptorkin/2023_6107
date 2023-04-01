@@ -81,7 +81,12 @@ void Robot::RobotPeriodic() {
   #endif
 	frc::SmartDashboard::PutNumber("Left Y", controller_driver->GetLeftY());
 	frc::SmartDashboard::PutNumber("Right X", controller_driver->GetRightX());
-  
+  #ifdef TEST_AUTO_ZERO
+  if (di_extender_upper.Get()) {
+    e_extender.SetPosition(0);
+    fmt::print("Zeroed Extender!")
+  }
+  #endif
 }
 
 void Robot::AutonomousInit() {
@@ -224,7 +229,6 @@ void Robot::TeleopPeriodic() {
   // Command motors
   d_drive.ArcadeDrive(d_driver_speed, d_driver_turn - d_turn_minorl + d_turn_minorr);
 
-
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
     #ifdef TEST_RETRACT_SAFE
@@ -252,21 +256,21 @@ void Robot::TeleopPeriodic() {
     m_right1.SetIdleMode(im_mode);
     m_right2.SetIdleMode(im_mode);
   }
-  #ifdef TEST_POOFER
+  
   if (controller_arms->GetLeftStickButtonPressed()) {
     solonoid_poofer.Toggle();
   }
-  #endif
 
   if (controller_arms->GetStartButtonPressed()) {
     b_vel_mode = !b_vel_mode;
   }
+  #ifndef TEST_AUTO_ZERO
   if (controller_arms->GetRightStickButtonPressed()){
     e_extender.SetPosition(0);
   }
+  #endif
 
-
-  // Command motor
+  // Command extender motor
   // Need to figure out a way to do both of these at the same time without toggling states.
   if (!b_vel_mode) {
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
@@ -299,8 +303,6 @@ void Robot::TeleopPeriodic() {
   if (d_arms_extend < 0.0 && !di_extender_lower.Get()) {
     d_arms_extend = 0.0;
   }
-  // Toggle for brake/coast mode for motors
-
 }
 
 void Robot::DisabledInit() {}
