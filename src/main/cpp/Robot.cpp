@@ -39,8 +39,10 @@ void Robot::RobotInit() {
   // This configures the REVPH for using the Digital sensor.
   // Not needed every run, but if we have to switch to a new/backup it is needed.
   compressor_main.EnableDigital();
+  
+  #ifdef TEST_BALANCE
   s_IMU.Calibrate();
-#ifdef TEST_PID
+  #endif
   // Setup PID arguments for extender
   c_extender.SetFeedbackDevice(e_extender);
   c_extender.SetP(EXTENDER_P);
@@ -50,7 +52,12 @@ void Robot::RobotInit() {
   c_extender.SetFF(EXTENDER_FF);
   c_extender.SetOutputRange(EXTENDER_MIN_OUT, EXTENDER_MAX_OUT);
   e_extender.SetPositionConversionFactor(EXTENDER_CONVERSION);
-#endif
+  #ifdef TEST_SOFT_LIMIT
+  m_extender.EnableSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, true);
+  m_extender.EnableSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, true);
+  m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, 0);
+  m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, -10.6);
+  #endif
 }
 
 /**
@@ -69,7 +76,9 @@ void Robot::RobotPeriodic() {
 	frc::SmartDashboard::PutBoolean("Extender at drop distance", di_extender_drop.Get());
 	frc::SmartDashboard::PutNumber("Extender Rotation Count", e_extender.GetPosition());
   frc::SmartDashboard::PutBoolean("Extender PID Controller", b_vel_mode);
+  #ifdef TEST_BALANCE
 	frc::SmartDashboard::PutNumber("IMU Pitch", s_IMU.GetGyroAngleX().value());
+  #endif
 	frc::SmartDashboard::PutNumber("Left Y", controller_driver->GetLeftY());
 	frc::SmartDashboard::PutNumber("Right X", controller_driver->GetRightX());
   
@@ -200,27 +209,16 @@ void Robot::TeleopPeriodic() {
   double d_driver_speed = controller_driver->GetLeftY();
   double d_driver_turn = controller_driver->GetRightX();
   double d_arms_extend = -controller_arms->GetLeftX();
-  
-  #ifdef TEST_MINOR_TURN
   double d_turn_minorl = controller_driver->GetLeftTriggerAxis();
   double d_turn_minorr = controller_driver->GetRightTriggerAxis();
-  #endif
-
-  // Apply deadband to analog controls
-  if (abs(d_arms_extend) <= DEADBAND_CONTROL) {
-    d_arms_extend = 0.0;
-  }
 
   // Apply movement macros
   d_driver_speed = d_driver_speed * NERF_SPEED;
   d_driver_turn = d_driver_turn * NERF_TURN;
   d_arms_extend *= NERF_EXTEND;
-  #ifdef TEST_MINOR_TURN
   d_turn_minorl *= 0.5;
   d_turn_minorr *= 0.5;
-  #endif
   
-
   // Set motor and pneumatic outputs from control inputs
   
   // Command motors
@@ -230,9 +228,9 @@ void Robot::TeleopPeriodic() {
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
     #ifdef TEST_RETRACT_SAFE
-    // Retract arms. Remember, threading on the rod is such that
+    // Retract arms when up. Remember, threading on the rod is such that
     // more negative is farther out. 0 is initial position.
-    if (e_extender.GetPosition() < EXTENDER_PICK) {
+    if (solonoid_arms.Get() && e_extender.GetPosition() < EXTENDER_PICK) {
       c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
     }
     #endif
@@ -243,7 +241,6 @@ void Robot::TeleopPeriodic() {
   }
   if (controller_driver->GetLeftBumperPressed()) {
     solonoid_brakes.Toggle();
-    #ifdef TEST_BRAKING
     if (im_mode == rev::CANSparkMax::IdleMode::kCoast) {
       im_mode = rev::CANSparkMax::IdleMode::kBrake;
     }
@@ -254,7 +251,6 @@ void Robot::TeleopPeriodic() {
     m_left2.SetIdleMode(im_mode);
     m_right1.SetIdleMode(im_mode);
     m_right2.SetIdleMode(im_mode);
-    #endif
   }
   #ifdef TEST_POOFER
   if (controller_arms->GetLeftStickButtonPressed()) {
@@ -262,29 +258,18 @@ void Robot::TeleopPeriodic() {
   }
   #endif
 
-  #ifdef TEST_PID
   if (controller_arms->GetStartButtonPressed()) {
     b_vel_mode = !b_vel_mode;
   }
   if (controller_arms->GetRightStickButtonPressed()){
     e_extender.SetPosition(0);
   }
-  #endif
 
-  // Apply limit switches to extender motor
-  if (d_arms_extend > 0.0 && !di_extender_upper.Get()) {
-    d_arms_extend = 0.0;
-  }
-  if (d_arms_extend < 0.0 && !di_extender_lower.Get()) {
-    d_arms_extend = 0.0;
-  }
 
-#ifdef TEST_PID
   // Command motor
   // Need to figure out a way to do both of these at the same time without toggling states.
   if (!b_vel_mode) {
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
-    //m_extender.Set( d_controller_1_x);
   } else {
     // Home Position
     if (controller_arms->GetAButtonPressed()){
@@ -306,10 +291,14 @@ void Robot::TeleopPeriodic() {
       c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
     }
   }
-  #else
-    m_extender.Set(d_arms_extend);
-  #endif
 
+  // Apply limit switches to extender motor
+  if (m_extender.GetAppliedOutput() && !di_extender_upper.Get()) {
+    d_arms_extend = 0.0;
+  }
+  if (d_arms_extend < 0.0 && !di_extender_lower.Get()) {
+    d_arms_extend = 0.0;
+  }
   // Toggle for brake/coast mode for motors
 
 }
