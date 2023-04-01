@@ -1,0 +1,36 @@
+Driver Controller
+Left X              :
+Left Y              : Driver Turn
+Left Stick Pressed  : 
+Right X             : Driver Speed
+Right Y             :
+Right Stick Pressed :
+A                   :
+B                   :
+X                   :
+Y                   :
+Select              :
+Start               :
+Left Bumper         : Toggle brakes
+Left Trigger        : Slight left turn
+Right Bumper        :
+Right Trigger       : Slight right turn
+
+
+Arms Controller
+Left X              :
+Left Y              :
+Left Stick Pressed  : Toggle Poofer
+Right X             :
+Right Y             : Extender control
+Right Stick Pressed :
+A                   : Extender Home
+B                   : Extender Pickup
+X                   : Extender Medium
+Y                   : Extender High
+Select              :
+Start               : Toggle Extender control mode
+Left Bumper         : Toggle arms
+Left Trigger        :
+Right Bumper        : Toggle gripper
+Right Trigger       :

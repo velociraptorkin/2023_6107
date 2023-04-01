@@ -300,6 +300,7 @@ void Robot::TeleopPeriodic() {
 
 #ifdef TEST_PID
   // Command motor
+  // Need to figure out a way to do both of these at the same time without toggling states.
   if (b_vel_mode) {
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
     //m_extender.Set( d_controller_1_x);
