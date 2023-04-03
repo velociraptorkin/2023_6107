@@ -43,6 +43,7 @@ void Robot::RobotInit() {
   #ifdef TEST_BALANCE
   s_IMU.Calibrate();
   #endif
+
   // Setup PID arguments for extender
   c_extender.SetFeedbackDevice(e_extender);
   c_extender.SetP(EXTENDER_P);
@@ -227,8 +228,11 @@ void Robot::TeleopPeriodic() {
   // Set motor and pneumatic outputs from control inputs
   
   // Command motors
+  #ifndef TEST_PID_DRIVING
   d_drive.ArcadeDrive(d_driver_speed, d_driver_turn - d_turn_minorl + d_turn_minorr);
-
+  #else
+  
+  #endif
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
     #ifdef TEST_RETRACT_SAFE
@@ -256,13 +260,16 @@ void Robot::TeleopPeriodic() {
     m_right1.SetIdleMode(im_mode);
     m_right2.SetIdleMode(im_mode);
   }
-  
+
   if (controller_arms->GetLeftStickButtonPressed()) {
     solonoid_poofer.Toggle();
   }
 
   if (controller_arms->GetStartButtonPressed()) {
     b_vel_mode = !b_vel_mode;
+    #ifdef TEST_NO_MEMORY
+    c_extender.SetReference(e_extender.GetPosition(), rev::CANSparkMax::ControlType::kPosition);
+    #endif
   }
   #ifndef TEST_AUTO_ZERO
   if (controller_arms->GetRightStickButtonPressed()){

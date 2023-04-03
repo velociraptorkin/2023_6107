@@ -10,12 +10,14 @@
 //#define TEST_BALANCE 1
 // Unable to get IMU to work, imu-assisted balancing is shelved for now
 
-//#define TEST_AUTO_ZERO 1
-//#define TEST_RETRACT_SAFE 1
-//#define TEST_SOFT_LIMIT 1
+//#define TEST_AUTO_ZERO 1    // Test this today
+//#define TEST_RETRACT_SAFE 1 // Test this today
+//#define TEST_SOFT_LIMIT 1   // Test this today
+//#define TEST_NO_MEMORY 1    // Test this today
 //#define TEST_PID_DRIVING 1
 //TODO PID Driving
 
+// Test driving with inversion and normal arcade calls.
 
 #include <frc/TimedRobot.h>
 #include <frc/smartdashboard/SendableChooser.h>
@@ -130,6 +132,10 @@ class Robot : public frc::TimedRobot {
   rev::SparkMaxRelativeEncoder e_right2 = m_right2.GetEncoder();
   // PID Controllers
   rev::SparkMaxPIDController c_extender = m_extender.GetPIDController();
+  #ifdef TEST_PID_DRIVING
+  rev::SparkMaxPIDController c_left1 = m_left1.GetPIDController();
+  rev::SparkMaxPIDController c_right1 = m_right1.GetPIDController();
+  #endif
   frc::MotorControllerGroup mg_left{m_left1, m_left2};
   frc::MotorControllerGroup mg_right{m_right1, m_right2};
   frc::DifferentialDrive d_drive{mg_left, mg_right};
