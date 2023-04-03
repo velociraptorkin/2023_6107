@@ -15,7 +15,8 @@
 //#define TEST_SOFT_LIMIT 1   // Test this today
 //#define TEST_NO_MEMORY 1    // Test this today
 //#define TEST_PID_DRIVING 1
-//TODO PID Driving
+//TODO PID Driving so we have better position control during autonomus.
+// Maybe we should use Poses and differential drive odometry?
 
 // Test driving with inversion and normal arcade calls.
 
@@ -57,6 +58,18 @@
 #define EXTENDER_MID -3.1
 #define EXTENDER_HIGH -10.5
 #define EXTENDER_CONVERSION 0.25
+
+#ifdef TEST_PID_DRIVING
+#define DRIVE_P 6e-5
+#define DRIVE_I 1e-6
+#define DRIVE_D 0.0
+#define DRIVE_IZ 0.0
+#define DRIVE_FF 0.000015
+#define DRIVE_MAX_OUT 1.0
+#define DRIVE_MIN_OUT -1.0
+#define DRIVE_CONVERSION 0.25
+
+#endif
 
 // Various other settings
 #define NERF_SPEED 1.0

@@ -59,6 +59,26 @@ void Robot::RobotInit() {
   m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, 0);
   m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, -10.6);
   #endif
+  
+  #ifdef TEST_PID_DRIVING
+  c_left1.SetFeedbackDevice(e_left1);
+  c_left1.SetP(DRIVE_P);
+  c_left1.SetI(DRIVE_I);
+  c_left1.SetD(DRIVE_D);
+  c_left1.SetIZone(DRIVE_IZ);
+  c_left1.SetFF(DRIVE_FF);
+  c_left1.SetOutputRange(DRIVE_MIN_OUT, DRIVE_MAX_OUT);
+  e_left1.SetPositionConversionFactor(DRIVE_CONVERSION);
+
+  c_right1.SetFeedbackDevice(e_right1);
+  c_right1.SetP(DRIVE_P);
+  c_right1.SetI(DRIVE_I);
+  c_right1.SetD(DRIVE_D);
+  c_right1.SetIZone(DRIVE_IZ);
+  c_right1.SetFF(DRIVE_FF);
+  c_right1.SetOutputRange(DRIVE_MIN_OUT, DRIVE_MAX_OUT);
+  e_right1.SetPositionConversionFactor(DRIVE_CONVERSION);
+  #endif
 }
 
 /**
@@ -231,7 +251,10 @@ void Robot::TeleopPeriodic() {
   #ifndef TEST_PID_DRIVING
   d_drive.ArcadeDrive(d_driver_speed, d_driver_turn - d_turn_minorl + d_turn_minorr);
   #else
-  
+  double d_left_speed = d_driver_speed + d_driver_turn- d_turn_minorl + d_turn_minorr;
+  double d_right_speed = d_driver_speed - d_driver_turn + d_turn_minorl - d_turn_minorr;
+  c_left1.SetReference(d_left_speed, rev::CANSparkMax::ControlType::kVelocity);
+  c_right1.SetReference(d_right_speed, rev::CANSparkMax::ControlType::kVelocity);
   #endif
 // Command pneumatic solonoids
   if (controller_arms->GetLeftBumperPressed()) {
