@@ -238,8 +238,8 @@ void Robot::TeleopPeriodic() {
     #ifdef TEST_RETRACT_SAFE
     // Retract arms when up. Remember, threading on the rod is such that
     // more negative is farther out. 0 is initial position.
-    if (solonoid_arms.Get() && e_extender.GetPosition() < EXTENDER_PICK) {
-      c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
+    if (solonoid_arms.Get() && e_extender.GetPosition() > EXTENDER_PICK) {
+      c_extender.SetReference((EXTENDER_PICK + EXTENDER_HOME) / 2, rev::CANSparkMax::ControlType::kPosition);
     }
     #endif
     solonoid_arms.Toggle();
