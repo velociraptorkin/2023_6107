@@ -113,8 +113,8 @@ void Robot::AutonomousInit() {
   m_autoSelected = m_chooser.GetSelected();
   
   #ifdef TEST_BALANCE
-  d_pitch = s_IMU.GetYComplementaryAngle();
-  d_initial_pitch = s_IMU.GetYComplementaryAngle();
+  d_pitch = s_IMU.GetYComplementaryAngle() - 86_deg;
+  d_initial_pitch = s_IMU.GetYComplementaryAngle() - 86_deg;
   #endif
   
   // Start timer for auto
@@ -131,7 +131,7 @@ void Robot::AutonomousPeriodic() {
   if (m_autoSelected == kAutoNameMobility) {
     // Back up for 5 seconds at 1/4 speed. Should get us just outside of the community.
     // TODO: Add code to drop the cube on the highest node.
-    if (game_timer.Get() > 1_s && game_timer.Get() < 6_s){
+    /*if (game_timer.Get() > 1_s && game_timer.Get() < 6_s){
       if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
         m_left1.Set(-0.25);
         m_right1.Set(0.25);
@@ -141,7 +141,58 @@ void Robot::AutonomousPeriodic() {
     if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
       m_left1.Set(0.0);
       m_right1.Set(0.0);
+    }*/
+    // Backup and extend arms
+    if (game_timer.Get() < 0.5_s){
+      m_left1.Set(0.20);
+      m_right1.Set(0.20);
+      c_extender.SetReference(EXTENDER_MID / 2, rev::CANSparkMax::ControlType::kPosition);
+    } 
+
+    // Raise arms and stop
+    if (game_timer.Get() > 0.5_s && game_timer.Get() < 1_s){
+      solonoid_arms.Set(true);
+      m_left1.Set(0.0);
+      m_right1.Set(0.0);
     }
+    // Extend arms and drive forward
+    if (game_timer.Get() > 3_s && game_timer.Get() < 3.5_s){
+      c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
+      m_left1.Set(-0.23);
+      m_right1.Set(-0.23);
+    }
+    // Stop and give us time to settle
+    if (game_timer.Get() > 3.5_s && game_timer.Get() < 4_s){
+      m_left1.Set(0.0);
+      m_right1.Set(0.0);
+    }
+    
+    // Release
+    if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
+      solonoid_gripper.Set(true);
+    }
+    if (game_timer.Get() > 6.5_s && game_timer.Get() < 7_s){
+      solonoid_gripper.Set(false);
+      c_extender.SetReference(EXTENDER_MID / 2, rev::CANSparkMax::ControlType::kPosition);
+    }
+    
+    if (game_timer.Get() > 8_s && game_timer.Get() < 8.5_s){
+      solonoid_arms.Set(false);
+      c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
+    }
+
+    // Back up out of the community
+    if (game_timer.Get() > 6.5_s && game_timer.Get() < 12.5_s){
+      m_left1.Set(0.25);
+      m_right1.Set(0.25);
+    } 
+    // Set speed to zero and hold position.
+    if (game_timer.Get() > 12.5_s && game_timer.Get() < 13_s){
+      m_left1.Set(0.0);
+      m_right1.Set(0.0);
+    }
+
+
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -169,10 +220,11 @@ void Robot::AutonomousPeriodic() {
       m_right1.Set(0.0);
     }*/
     
-    if (game_timer.Get() > 10_s && game_timer.Get() < 11.25_s){
+    if (game_timer.Get() > 10_s && game_timer.Get() < 12_s){
       m_left1.Set(-0.18);
       m_right1.Set(-0.18);
-    }    
+    } 
+    /*   
     if (game_timer.Get() > 11.25_s && game_timer.Get() < 11.5_s){
       im_mode = rev::CANSparkMax::IdleMode::kBrake;
       m_left1.SetIdleMode(im_mode);
@@ -180,14 +232,14 @@ void Robot::AutonomousPeriodic() {
       m_right1.SetIdleMode(im_mode);
       m_right2.SetIdleMode(im_mode);
       solonoid_brakes.Set(true);
-    }
+    }*/
     #ifdef TEST_BALANCE
-    /*
+    
     // Start autobalance process
     // Assumes we are not on a level surface.
-    if (game_timer.Get() > 9_s && game_timer.Get() < 15_s) {
+    if (game_timer.Get() > 12_s && game_timer.Get() < 15_s) {
       d_hpitch = d_pitch;
-      d_pitch = s_IMU.GetYComplementaryAngle();
+      d_pitch = s_IMU.GetYComplementaryAngle() - 86_deg;
         
       if ((d_pitch > DEADBAND_BALANCE or d_pitch < -DEADBAND_BALANCE) and game_timer.Get() >= t_pause_time) {
         // if pitch direction changes, shorten drive time. => go slower instead of pause
@@ -224,7 +276,7 @@ void Robot::AutonomousPeriodic() {
       
       
    
-    }*/
+    }
     #endif
     
   }
