@@ -7,13 +7,15 @@
 #include <string>
 
 // Build Options
-//#define TEST_BALANCE 1
+#define TEST_BALANCE 1
 // Unable to get IMU to work, imu-assisted balancing is shelved for now
 
-//#define TEST_AUTO_ZERO 1    // Test this today
-//#define TEST_RETRACT_SAFE 1 // Test this today
-//#define TEST_SOFT_LIMIT 1   // Test this today
-//#define TEST_NO_MEMORY 1    // Test this today
+#define TEST_AUTO_ZERO 1    // Test this today Works!
+#define TEST_RETRACT_SAFE 1 // Test this today Works!
+                            // Change controls so that this works all the time instead of just when in vel mode.
+
+//#define TEST_SOFT_LIMIT 1   // Test this today Ehh...
+#define TEST_NO_MEMORY 1    // Test this today Works!
 //#define TEST_PID_DRIVING 1
 //TODO PID Driving so we have better position control during autonomus.
 // Maybe we should use Poses and differential drive odometry?
@@ -27,7 +29,7 @@
 #include <frc/Solenoid.h>
 #include <frc/Compressor.h>
 #include <frc/DigitalInput.h>
-#include <frc/ADIS16448_IMU.h>
+#include <frc/ADIS16470_IMU.h>
 #include <frc/drive/DifferentialDrive.h>
 #include <frc/motorcontrol/MotorControllerGroup.h>
 #include <rev/CANSparkMax.h>
@@ -73,7 +75,7 @@
 
 // Various other settings
 #define NERF_SPEED 1.0
-#define NERF_TURN 0.5
+#define NERF_TURN 0.75
 #define NERF_EXTEND 0.3
 #define NERF_AUTO 0.5
 #define AUTO_SPEED 0.125
@@ -103,8 +105,8 @@ class Robot : public frc::TimedRobot {
   std::string m_autoSelected;
   rev::CANSparkMax::IdleMode im_mode = rev::CANSparkMax::IdleMode::kCoast;
   frc::Timer game_timer;
+  frc::ADIS16470_IMU s_IMU{};
   #ifdef TEST_BALANCE
-  frc::ADIS16448_IMU s_IMU{};
   units::angle::degree_t d_pitch, d_hpitch, d_initial_pitch;
   units::time::second_t t_pause_time;
   #endif
