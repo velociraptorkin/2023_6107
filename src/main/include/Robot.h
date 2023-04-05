@@ -8,16 +8,14 @@
 
 // Build Options
 
-#define TEST_AUTO_ZERO 1    // Test this today Works!
-#define TEST_RETRACT_SAFE 1 // Test this today Works!
-                            // Change controls so that this works all the time instead of just when in vel mode.
+//#define TEST_RETRACT_SAFE 1 // Test this today 
+// TODO Test limit switch code.
+
 
 //#define TEST_PID_DRIVING 1
 //TODO PID Driving so we have better position control during autonomus.
 // Maybe we should use Poses and differential drive odometry?
-
-// Test driving with inversion and normal arcade calls.
-
+// Maybe this should be refered to as measured driving instead of pid driving?
 #include <frc/TimedRobot.h>
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc/Joystick.h>
