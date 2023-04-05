@@ -40,9 +40,7 @@ void Robot::RobotInit() {
   // Not needed every run, but if we have to switch to a new/backup it is needed.
   compressor_main.EnableDigital();
   
-  #ifdef TEST_BALANCE
   s_IMU.Calibrate();
-  #endif
 
   // Setup PID arguments for extender
   c_extender.SetFeedbackDevice(e_extender);
@@ -53,16 +51,8 @@ void Robot::RobotInit() {
   c_extender.SetFF(EXTENDER_FF);
   c_extender.SetOutputRange(EXTENDER_MIN_OUT, EXTENDER_MAX_OUT);
   e_extender.SetPositionConversionFactor(EXTENDER_CONVERSION);
-  #ifdef TEST_SOFT_LIMIT
-  m_extender.EnableSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, true);
-  m_extender.EnableSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, true);
-  m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, 0);
-  m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, -10.6);
-  #else
-  
   m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kForward, 100.0);
   m_extender.SetSoftLimit(rev::CANSparkMax::SoftLimitDirection::kReverse, -100.0);
-  #endif
   
   #ifdef TEST_PID_DRIVING
   c_left1.SetFeedbackDevice(e_left1);
@@ -127,22 +117,10 @@ void Robot::AutonomousInit() {
 
 void Robot::AutonomousPeriodic() {
   /////////////////////////////////////////////////////////////////////////////
-  // Mobility Only Auto
+  // Score a cube in the high node and then get the mobility score.
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameMobility) {
-    // Back up for 5 seconds at 1/4 speed. Should get us just outside of the community.
-    // TODO: Add code to drop the cube on the highest node.
-    /*if (game_timer.Get() > 1_s && game_timer.Get() < 6_s){
-      if (!(m_right1.Get() > 0.130 && m_right1.Get() < 0.120 )) {
-        m_left1.Set(-0.25);
-        m_right1.Set(0.25);
-      }
-    } 
-    // Set speed to zero and hold position.
-    if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
-      m_left1.Set(0.0);
-      m_right1.Set(0.0);
-    }*/
+
     // Backup and extend arms
     if (game_timer.Get() < 0.5_s){
       m_left1.Set(0.20);
@@ -156,12 +134,14 @@ void Robot::AutonomousPeriodic() {
       m_left1.Set(0.0);
       m_right1.Set(0.0);
     }
+
     // Extend arms and drive forward
     if (game_timer.Get() > 3_s && game_timer.Get() < 3.5_s){
       c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
       m_left1.Set(-0.23);
       m_right1.Set(-0.23);
     }
+
     // Stop and give us time to settle
     if (game_timer.Get() > 3.5_s && game_timer.Get() < 4_s){
       m_left1.Set(0.0);
@@ -172,17 +152,20 @@ void Robot::AutonomousPeriodic() {
     if (game_timer.Get() > 6_s && game_timer.Get() < 6.5_s){
       solonoid_gripper.Set(true);
     }
+
+    // Close the gripper and retract to a safe position to lower the arms
     if (game_timer.Get() > 6.5_s && game_timer.Get() < 7_s){
       solonoid_gripper.Set(false);
       c_extender.SetReference(EXTENDER_MID / 2, rev::CANSparkMax::ControlType::kPosition);
     }
     
+    // Drop the arms and bring them all the way home.
     if (game_timer.Get() > 8_s && game_timer.Get() < 8.5_s){
       solonoid_arms.Set(false);
       c_extender.SetReference(EXTENDER_HOME, rev::CANSparkMax::ControlType::kPosition);
     }
 
-    // Back up out of the community
+    // Back up out of the community. This happens at the same time as we reset.
     if (game_timer.Get() > 6.5_s && game_timer.Get() < 12.5_s){
       m_left1.Set(0.25);
       m_right1.Set(0.25);
@@ -192,39 +175,38 @@ void Robot::AutonomousPeriodic() {
       m_left1.Set(0.0);
       m_right1.Set(0.0);
     }
-
-
+    //TODO Come back into the community after we go out.
   }
 
   /////////////////////////////////////////////////////////////////////////////
   // Balancing Auto
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameBalance) {
-    // Go over(?) the charge station. -1/4 speed for 5 seconds.
+    // Start out by scoring from the poofer.
     if ( game_timer.Get() < 1_s){
       solonoid_poofer.Set(true);
     }
+
+    // Reset poofer and start driving backwards. Should end when we are partially over the charge station.
     if (game_timer.Get() > 1_s &&  game_timer.Get() < 3.2_s){
       solonoid_poofer.Set(false);
       m_left1.Set(0.30);
       m_right1.Set(0.30);
     }
-    // Go slow over and down the charge station.
+
+    // Go slow the rest of the way over the charge station, and out of the community.
     if (game_timer.Get() > 3.2_s && game_timer.Get() < 9_s){
       m_left1.Set(0.10);
       m_right1.Set(0.10);
     } 
+
     // Start back up the charge station at 1/4 speed for 1.5 seconds
     if (game_timer.Get() > 9_s && game_timer.Get() < 11_s){
       m_left1.Set(-0.25);
       m_right1.Set(-0.25);
     }
-    // Stop moving
-    /*if (game_timer.Get() > 8.5_s && game_timer.Get() < 9_s){
-      m_left1.Set(0.0);
-      m_right1.Set(0.0);
-    }*/
     
+    // Go a little slower for the last leg.
     if (game_timer.Get() > 11_s && game_timer.Get() < 12.25_s){
       m_left1.Set(-0.18);
       m_right1.Set(-0.18);
@@ -238,38 +220,37 @@ void Robot::AutonomousPeriodic() {
       m_right2.SetIdleMode(im_mode);
       solonoid_brakes.Set(true);
     }*/
-    #ifdef TEST_BALANCE
+
     if (game_timer.Get() > 12.25_s && game_timer.Get() < 15_s) {
-        solonoid_brakes.Set(true);
-      } else {
-        solonoid_brakes.Set(false);
-      }  
+      solonoid_brakes.Set(true);
+    } else {
+      solonoid_brakes.Set(false);
+    }  
     // Start autobalance process
     // Assumes we are not on a level surface.
     if (game_timer.Get() > 13_s && game_timer.Get() < 15_s) {
+      // Set the idle mode so we slip less.
       im_mode = rev::CANSparkMax::IdleMode::kBrake;
       m_left1.SetIdleMode(im_mode);
       m_left2.SetIdleMode(im_mode);
       m_right1.SetIdleMode(im_mode);
       m_right2.SetIdleMode(im_mode);
+      // Save historical pitch and get current pitch.
       d_hpitch = d_pitch;
       d_pitch = s_IMU.GetYComplementaryAngle() - 86_deg;
+      // Manage brakes during pause time.
       if (game_timer.Get() < t_pause_time) {
         solonoid_brakes.Set(true);
       } else {
         solonoid_brakes.Set(false);
-      }  
+      }
+      // Autobalance magic.
       if ((d_pitch < -DEADBAND_BALANCE and d_hpitch > DEADBAND_BALANCE) or (d_pitch > DEADBAND_BALANCE and d_hpitch < -DEADBAND_BALANCE)) {
           d_drive_speed *= NERF_AUTO;
           t_pause_time = game_timer.Get() + 1_s;
         }
       if ((d_pitch > DEADBAND_BALANCE or d_pitch < -DEADBAND_BALANCE) and 
         (game_timer.Get() >= t_pause_time or t_pause_time == 1_s)) {
-        // if pitch direction changes, shorten drive time. => go slower instead of pause
-        
-        // Do we need to take into account angle delta in our calculations?
-        // Maybe use the derivitive of this to slow our speed?
-            // If there is a high angular velocity, maybe we should slow down and let it settle?
         //if (game_timer.Get() >= t_pause_time) {
           if (d_pitch > DEADBAND_BALANCE){
             // Move Forward
@@ -282,33 +263,18 @@ void Robot::AutonomousPeriodic() {
           }
         //}
       }
-
-
-      // Do this when balanced
-      
-      //im_mode = rev::CANSparkMax::IdleMode::kBrake;
-      //m_left1.SetIdleMode(im_mode);
-      //m_left2.SetIdleMode(im_mode);
-      //m_right1.SetIdleMode(im_mode);
-      //m_right2.SetIdleMode(im_mode);
-      //solonoid_brakes.Set(true);
-      
-      
-      
-   
     }
-    #endif
-    
   }
 }
 
 void Robot::TeleopInit() {
-    im_mode = rev::CANSparkMax::IdleMode::kCoast;
-    m_left1.SetIdleMode(im_mode);
-    m_left2.SetIdleMode(im_mode);
-    m_right1.SetIdleMode(im_mode);
-    m_right2.SetIdleMode(im_mode);
-    solonoid_brakes.Set(false);
+  // Reset idle mode for driving so we don't brown-out and disengauge brakes. 
+  im_mode = rev::CANSparkMax::IdleMode::kCoast;
+  m_left1.SetIdleMode(im_mode);
+  m_left2.SetIdleMode(im_mode);
+  m_right1.SetIdleMode(im_mode);
+  m_right2.SetIdleMode(im_mode);
+  solonoid_brakes.Set(false);
 }
 
 void Robot::TeleopPeriodic() {
@@ -317,6 +283,7 @@ void Robot::TeleopPeriodic() {
   // position instead of setting a percent output. Would also allow switching
   // to distance tracking so that we can move exact distances to tie into
   // camera inputs or other sensors. 
+
   // Get analog controls 
   double d_driver_speed = controller_driver->GetLeftY();
   double d_driver_turn = controller_driver->GetRightX();
@@ -335,14 +302,18 @@ void Robot::TeleopPeriodic() {
   
   // Command motors
   #ifndef TEST_PID_DRIVING
+  // Drive motors and calculate how minor turning changes the controls.
   d_drive.ArcadeDrive(d_driver_speed, d_driver_turn - d_turn_minorl + d_turn_minorr);
   #else
+  // Calculate individual speed targets 
   double d_left_speed = d_driver_speed + d_driver_turn- d_turn_minorl + d_turn_minorr;
   double d_right_speed = d_driver_speed - d_driver_turn + d_turn_minorl - d_turn_minorr;
+  // Apply velocity set points.
   c_left1.SetReference(d_left_speed, rev::CANSparkMax::ControlType::kVelocity);
   c_right1.SetReference(d_right_speed, rev::CANSparkMax::ControlType::kVelocity);
   #endif
 // Command pneumatic solonoids
+  // Arms control
   if (controller_arms->GetLeftBumperPressed()) {
     // Retract arms when up. Remember, threading on the rod is such that
     // more negative is farther out. 0 is initial position.
@@ -351,9 +322,13 @@ void Robot::TeleopPeriodic() {
     }
     solonoid_arms.Toggle();
   }
+
+  // Gripper control
   if (controller_arms->GetRightBumperPressed()) {
     solonoid_gripper.Toggle();
   }
+
+  // Brake control. Sets pneumatic brakes and brake idle mode.
   if (controller_driver->GetLeftBumperPressed()) {
     solonoid_brakes.Toggle();
     if (im_mode == rev::CANSparkMax::IdleMode::kCoast) {
@@ -368,6 +343,7 @@ void Robot::TeleopPeriodic() {
     m_right2.SetIdleMode(im_mode);
   }
 
+  // Poofer control
   if (controller_arms->GetLeftStickButtonPressed()) {
     solonoid_poofer.Set(true);
   }
@@ -379,15 +355,17 @@ void Robot::TeleopPeriodic() {
     b_vel_mode = !b_vel_mode;
     c_extender.SetReference(e_extender.GetPosition(), rev::CANSparkMax::ControlType::kPosition);
   }
-  #ifndef TEST_AUTO_ZERO
-  if (controller_arms->GetRightStickButtonPressed()){
-    e_extender.SetPosition(0);
-  }
-  #endif
 
   // Command extender motor
   // Need to figure out a way to do both of these at the same time without toggling states.
-  if (!b_vel_mode) {
+  if (!b_vel_mode) {  
+    // Apply limit switches to extender motor
+    if (m_extender.GetAppliedOutput() && !di_extender_upper.Get()) {
+      d_arms_extend = 0.0;
+    }
+    if (d_arms_extend < 0.0 && !di_extender_lower.Get()) {
+      d_arms_extend = 0.0;
+    }
     c_extender.SetReference(d_arms_extend, rev::CANSparkMax::ControlType::kDutyCycle);
   } else {
     // Home Position
@@ -409,14 +387,6 @@ void Robot::TeleopPeriodic() {
     if (controller_arms->GetYButtonPressed()) {
       c_extender.SetReference(EXTENDER_HIGH, rev::CANSparkMax::ControlType::kPosition);
     }
-  }
-
-  // Apply limit switches to extender motor
-  if (m_extender.GetAppliedOutput() && !di_extender_upper.Get()) {
-    d_arms_extend = 0.0;
-  }
-  if (d_arms_extend < 0.0 && !di_extender_lower.Get()) {
-    d_arms_extend = 0.0;
   }
 }
 

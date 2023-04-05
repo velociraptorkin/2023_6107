@@ -7,15 +7,11 @@
 #include <string>
 
 // Build Options
-#define TEST_BALANCE 1
-// Unable to get IMU to work, imu-assisted balancing is shelved for now
 
 #define TEST_AUTO_ZERO 1    // Test this today Works!
 #define TEST_RETRACT_SAFE 1 // Test this today Works!
                             // Change controls so that this works all the time instead of just when in vel mode.
 
-//#define TEST_SOFT_LIMIT 1   // Test this today Ehh...
-#define TEST_NO_MEMORY 1    // Test this today Works!
 //#define TEST_PID_DRIVING 1
 //TODO PID Driving so we have better position control during autonomus.
 // Maybe we should use Poses and differential drive odometry?
@@ -106,10 +102,8 @@ class Robot : public frc::TimedRobot {
   rev::CANSparkMax::IdleMode im_mode = rev::CANSparkMax::IdleMode::kCoast;
   frc::Timer game_timer;
   frc::ADIS16470_IMU s_IMU{};
-  #ifdef TEST_BALANCE
   units::angle::degree_t d_pitch, d_hpitch, d_initial_pitch;
   units::time::second_t t_pause_time;
-  #endif
   double d_drive_speed = AUTO_SPEED;
   bool b_vel_mode = false;
   

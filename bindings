@@ -1,8 +1,8 @@
 Driver Controller
 Left X              :
-Left Y              : Driver Turn
+Left Y              : Driver Speed
 Left Stick Pressed  : 
-Right X             : Driver Speed
+Right X             : Driver Turn
 Right Y             :
 Right Stick Pressed :
 A                   :
@@ -18,12 +18,12 @@ Right Trigger       : Slight right turn
 
 
 Arms Controller
-Left X              :
+Left X              : Extender control
 Left Y              :
 Left Stick Pressed  : Toggle Poofer
 Right X             :
-Right Y             : Extender control
-Right Stick Pressed : Zero Arms
+Right Y             :
+Right Stick Pressed :
 A                   : Extender Home
 B                   : Extender Pickup
 X                   : Extender Medium
