@@ -120,6 +120,7 @@ void Robot::AutonomousInit() {
   // Start timer for auto
   game_timer.Reset();
   game_timer.Start();
+  t_pause_time = 1_s;
   fmt::print("Auto selected: {}\n", m_autoSelected);
 
 }
@@ -200,17 +201,21 @@ void Robot::AutonomousPeriodic() {
   /////////////////////////////////////////////////////////////////////////////
   if (m_autoSelected == kAutoNameBalance) {
     // Go over(?) the charge station. -1/4 speed for 5 seconds.
-    if ( game_timer.Get() < 2.2_s){
+    if ( game_timer.Get() < 1_s){
+      solonoid_poofer.Set(true);
+    }
+    if (game_timer.Get() > 1_s &&  game_timer.Get() < 3.2_s){
+      solonoid_poofer.Set(false);
       m_left1.Set(0.30);
       m_right1.Set(0.30);
     }
     // Go slow over and down the charge station.
-    if (game_timer.Get() > 2.2_s && game_timer.Get() < 8_s){
+    if (game_timer.Get() > 3.2_s && game_timer.Get() < 9_s){
       m_left1.Set(0.10);
       m_right1.Set(0.10);
     } 
     // Start back up the charge station at 1/4 speed for 1.5 seconds
-    if (game_timer.Get() > 8_s && game_timer.Get() < 10_s){
+    if (game_timer.Get() > 9_s && game_timer.Get() < 11_s){
       m_left1.Set(-0.25);
       m_right1.Set(-0.25);
     }
@@ -220,7 +225,7 @@ void Robot::AutonomousPeriodic() {
       m_right1.Set(0.0);
     }*/
     
-    if (game_timer.Get() > 10_s && game_timer.Get() < 12_s){
+    if (game_timer.Get() > 11_s && game_timer.Get() < 12.25_s){
       m_left1.Set(-0.18);
       m_right1.Set(-0.18);
     } 
@@ -234,23 +239,38 @@ void Robot::AutonomousPeriodic() {
       solonoid_brakes.Set(true);
     }*/
     #ifdef TEST_BALANCE
-    
+    if (game_timer.Get() > 12.25_s && game_timer.Get() < 15_s) {
+        solonoid_brakes.Set(true);
+      } else {
+        solonoid_brakes.Set(false);
+      }  
     // Start autobalance process
     // Assumes we are not on a level surface.
-    if (game_timer.Get() > 12_s && game_timer.Get() < 15_s) {
+    if (game_timer.Get() > 13_s && game_timer.Get() < 15_s) {
+      im_mode = rev::CANSparkMax::IdleMode::kBrake;
+      m_left1.SetIdleMode(im_mode);
+      m_left2.SetIdleMode(im_mode);
+      m_right1.SetIdleMode(im_mode);
+      m_right2.SetIdleMode(im_mode);
       d_hpitch = d_pitch;
       d_pitch = s_IMU.GetYComplementaryAngle() - 86_deg;
-        
-      if ((d_pitch > DEADBAND_BALANCE or d_pitch < -DEADBAND_BALANCE) and game_timer.Get() >= t_pause_time) {
-        // if pitch direction changes, shorten drive time. => go slower instead of pause
-        if ((d_pitch < -DEADBAND_BALANCE and d_hpitch > DEADBAND_BALANCE) or (d_pitch > DEADBAND_BALANCE and d_hpitch < -DEADBAND_BALANCE)) {
+      if (game_timer.Get() < t_pause_time) {
+        solonoid_brakes.Set(true);
+      } else {
+        solonoid_brakes.Set(false);
+      }  
+      if ((d_pitch < -DEADBAND_BALANCE and d_hpitch > DEADBAND_BALANCE) or (d_pitch > DEADBAND_BALANCE and d_hpitch < -DEADBAND_BALANCE)) {
           d_drive_speed *= NERF_AUTO;
           t_pause_time = game_timer.Get() + 1_s;
         }
+      if ((d_pitch > DEADBAND_BALANCE or d_pitch < -DEADBAND_BALANCE) and 
+        (game_timer.Get() >= t_pause_time or t_pause_time == 1_s)) {
+        // if pitch direction changes, shorten drive time. => go slower instead of pause
+        
         // Do we need to take into account angle delta in our calculations?
         // Maybe use the derivitive of this to slow our speed?
             // If there is a high angular velocity, maybe we should slow down and let it settle?
-        if (game_timer.Get() >= t_pause_time) {
+        //if (game_timer.Get() >= t_pause_time) {
           if (d_pitch > DEADBAND_BALANCE){
             // Move Forward
             m_left1.Set(-d_drive_speed);
@@ -260,7 +280,7 @@ void Robot::AutonomousPeriodic() {
             m_left1.Set(d_drive_speed);
             m_right1.Set(d_drive_speed);
           }
-        }
+        //}
       }
 
 
